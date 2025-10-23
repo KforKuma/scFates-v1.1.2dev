@@ -142,17 +142,17 @@ def pseudotime(
         root = adata.uns["graph"]["root"]
         tips = adata.uns["graph"]["tips"]
         endpoints = tips[tips != root]
+        # 对先前 n_map 次的 mapping 的结果做拼接，每一列代表每一次实验，每一行代表每一个细胞
+        # 统计对每个细胞的“软”分配结果：多少次被分配到那个 seg 里
+        allsegs = (
+            pd.get_dummies(pd.concat([df.seg for df in adata.uns["pseudotime_list"].values()], axis=1).stack())
+            .groupby(level=0)
+            .sum()
+        )
 
-        allsegs = pd.concat(
-            [df.seg for df in adata.uns["pseudotime_list"].values()], axis=1
-        )
-        allsegs = pd.concat(
-        [df.seg for df in adata.uns["pseudotime_list"].values()], axis=1
-        )
-        allsegs = allsegs.apply(lambda x: x.value_counts(), axis=1).fillna(0)
-        
-        allsegs_complete = pd.DataFrame(np.zeros((adata.shape[0],pp_seg.shape[0])),index=allsegs.index)
-        allsegs_complete.columns = allsegs_complete.columns+1
+        allsegs_complete = pd.DataFrame(np.zeros((adata.shape[0], pp_seg.shape[0])), index=allsegs.index)
+        allsegs_complete.columns = allsegs_complete.columns + 1
+        # 这里只是对 列名 进行操作，把 0 开始变成 1 开始
         allsegs_complete.columns = allsegs_complete.columns.astype(int).astype(str)
 
         if allsegs.shape[1]!=allsegs_complete.shape[1]:
