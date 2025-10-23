@@ -183,6 +183,10 @@ def gen_milestones_gradients(adata, seg_order=None):
         palette_tools._set_default_colors_for_categorical_obs(adata, "milestones")
 
     def milestones_prog(s):
+        seg_cells = adata.obs[adata.obs.seg == s]
+        if len(seg_cells) == 0:
+            return pd.Series([], dtype="object")  # 空返回，concat时会被忽略
+
         cfrom = adata.obs.t[adata.obs.seg == s].idxmin()
         cto = adata.obs.t[adata.obs.seg == s].idxmax()
         mfrom = adata.obs.milestones[cfrom]
