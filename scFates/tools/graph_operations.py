@@ -119,7 +119,21 @@ def cleanup(
         B = np.delete(B, tip_torem, axis=1)
         R = np.delete(R, tip_torem, axis=1)
         F = np.delete(F, tip_torem, axis=1)
-    R = (R.T / R.sum(axis=1)).T
+
+    # 把 NaN 变 0
+    R = np.nan_to_num(R, nan=0.0)
+
+    # 找到极小行（sum < 1e-10）
+    row_sums = R.sum(axis=1, keepdims=True)
+    extremely_small = row_sums[:, 0] < 1e-10
+
+    # 对极小行直接赋均匀分布
+    R[extremely_small, :] = 1.0 / R.shape[1]
+
+    # 重新计算 row_sums 并归一化
+    row_sums = R.sum(axis=1, keepdims=True)
+    R = R / row_sums
+
     adata.obsm["X_R"] = R
     graph["B"] = B
     graph["F"] = F
