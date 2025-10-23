@@ -227,16 +227,15 @@ def pseudotime(
     for seg in pp_seg.n:
         cell_seg = adata.obs.loc[adata.obs["seg"] == seg, "t"]
         if len(cell_seg) > 0:
-            milestones[
-                cell_seg.index[
-                    (cell_seg - min(cell_seg) - (max(cell_seg - min(cell_seg)) / 2) < 0)
-                ]
-            ] = pp_seg.loc[int(seg), "from"]
-            milestones[
-                cell_seg.index[
-                    (cell_seg - min(cell_seg) - (max(cell_seg - min(cell_seg)) / 2) > 0)
-                ]
-            ] = pp_seg.loc[int(seg), "to"]
+            if len(cell_seg) == 1:
+                # 只有一个细胞 → 直接分配到 "from"
+                milestones[cell_seg.index] = pp_seg.loc[int(seg), "from"]
+            else:
+                # 多个细胞 → 用中点分割
+                midpoint = min(cell_seg) + (max(cell_seg) - min(cell_seg)) / 2
+                milestones[cell_seg.index[cell_seg < midpoint]] = pp_seg.loc[int(seg), "from"]
+                milestones[cell_seg.index[cell_seg > midpoint]] = pp_seg.loc[int(seg), "to"]
+
     adata.obs["milestones"] = milestones
     non_nan_mask = adata.obs.milestones.notna()
     milestones_str = adata.obs.milestones.copy()
