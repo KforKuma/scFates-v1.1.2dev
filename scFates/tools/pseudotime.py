@@ -266,12 +266,24 @@ def pseudotime(
         if recolor:
             adata.uns["milestones_colors"] = tmp_mil_col
         reassign = False
-    adata.uns["seg_colors"] = [
-        np.array(adata.uns["milestones_colors"])[
-            pd.Series(adata.uns["graph"]["milestones"]) == t
-        ][0]
-        for t in adata.uns["graph"]["pp_seg"].to
-    ]
+
+    try:
+        print("Trying to assign color to milestone.")
+        mst_dict = adata.uns["graph"]["milestones"]  # dict
+        milestone_colors = np.array(adata.uns["milestones_colors"])
+
+        # 先构建 value->index 的字典，避免每次都调用 list.index()
+        val_to_idx = {v: i for i, v in enumerate(mst_dict.values())}
+
+        adata.uns["seg_colors"] = [
+            milestone_colors[val_to_idx[t]] if t in val_to_idx else "#808080"
+            for t in adata.uns["graph"]["pp_seg"].to
+        ]
+        grey_count = sum(c == "#808080" for c in adata.uns["seg_colors"])
+        print(f"Successfully assigned colors. Grey fallback used {grey_count} times.")
+
+    except Exception as e:
+        print(f"An error occurred: {e}, please assign color manually at adata.uns['seg_colors']")
 
     logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
     logg.hint(
